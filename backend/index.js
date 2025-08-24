@@ -1,3 +1,4 @@
+// server.js
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -10,14 +11,18 @@ import userRoutes from './routes/users.js';
 dotenv.config();
 
 const app = express();
+
+// Use environment variables with fallback
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/video-sharing-app';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  origin: NODE_ENV === 'production' 
+    ? ['https://yourproductiondomain.com'] 
+    : [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -31,7 +36,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Increase timeout for large file uploads
 app.use((req, res, next) => {
-  // Set timeout to 5 minutes for upload routes
   if (req.path === '/api/videos/upload') {
     req.setTimeout(5 * 60 * 1000); // 5 minutes
     res.setTimeout(5 * 60 * 1000);
@@ -53,13 +57,16 @@ app.use('/api', (req, res, next) => {
 // MongoDB connection
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ MongoDB connected'))
-  .catch((err) => console.error('❌ Database connection error:', err));
+  .catch((err) => {
+    console.error('❌ Database connection error:', err);
+    process.exit(1); // Exit app if DB connection fails
+  });
 
 // Serve uploads folder statically with cache control
 app.use('/uploads', express.static('uploads', {
   maxAge: '1d',
   setHeaders: (res, path) => {
-    if (path.includes('.mp4') || path.includes('.webm')) {
+    if (path.endsWith('.mp4') || path.endsWith('.webm')) {
       res.set('Cache-Control', 'public, max-age=86400');
     } else {
       res.set('Cache-Control', 'public, max-age=3600');
@@ -67,20 +74,13 @@ app.use('/uploads', express.static('uploads', {
   }
 }));
 
-// API Routes - Organized by feature
-// Auth Routes: login, signup, logout
+// API Routes
 app.use('/api/auth', authRoutes);
-
-// User Routes: creator dashboard, consumer dashboard, profile
 app.use('/api/users', userRoutes);
-
-// Video Routes: upload, view, manage videos
 app.use('/api/videos', videoRoutes);
-
-// Comment Routes: video comments, interactions
 app.use('/api/comments', commentRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
@@ -109,11 +109,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📋 Available endpoints:`);
-  console.log(`   Auth: http://localhost:${PORT}/api/auth`);
-  console.log(`   Users: http://localhost:${PORT}/api/users`);
-  console.log(`   Videos: http://localhost:${PORT}/api/videos`);
-  console.log(`   Comments: http://localhost:${PORT}/api/comments`);
+  console.log(`📋 Endpoints: Auth: /api/auth | Users: /api/users | Videos: /api/videos | Comments: /api/comments`);
 });
