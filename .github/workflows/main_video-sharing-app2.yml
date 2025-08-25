@@ -34,4 +34,4 @@ jobs:
         app-name: 'video-sharing-app2'
         slot-name: 'Production'
         package: ./backend
-        publish-profile: ${{ secrets.VIDEOSHARINGAPPTWOSECRETS }}
+        publish-profile: ${{ secrets.NEWVIDEOSHARINGAPPTWOSECRETS }}
