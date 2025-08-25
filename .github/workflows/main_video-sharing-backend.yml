@@ -35,3 +35,4 @@ jobs:
         app-name: 'video-sharing-backend'   # your Azure Web App name
         slot-name: 'Production'
         package: ./backend
+        publish-profile: ${{ secrets.VIDEOSHARINGAPPTWOSECRETS }}
