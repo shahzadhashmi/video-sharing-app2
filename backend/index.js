@@ -12,29 +12,37 @@ dotenv.config();
 
 const app = express();
 
-// Use environment variables with fallback
+// Environment variables
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/video-sharing-app';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Enhanced CORS configuration
+// ----------------- CORS CONFIG -----------------
 const corsOptions = {
-  origin: NODE_ENV === 'production'
-    ? ['https://red-pebble-0def29e03.2.azurestaticapps.net'] // ✅ Your frontend domain
-    : [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    const allowedOrigins = NODE_ENV === 'production'
+      ? ['https://red-pebble-0def29e03.2.azurestaticapps.net']
+      : [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:5173'];
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Authorization'],
-  maxAge: 86400
 };
-
 app.use(cors(corsOptions));
+// ------------------------------------------------
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Increase timeout for large file uploads
+// Timeout for large uploads
 app.use((req, res, next) => {
   if (req.path === '/api/videos/upload') {
     req.setTimeout(5 * 60 * 1000); // 5 minutes
@@ -43,7 +51,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Global cache control middleware for API routes
+// Global cache control
 app.use('/api', (req, res, next) => {
   res.set({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -59,10 +67,10 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => {
     console.error('❌ Database connection error:', err);
-    process.exit(1); // Exit app if DB connection fails
+    process.exit(1);
   });
 
-// Serve uploads folder statically with cache control
+// Serve uploads folder
 app.use('/uploads', express.static('uploads', {
   maxAge: '1d',
   setHeaders: (res, path) => {
@@ -74,7 +82,7 @@ app.use('/uploads', express.static('uploads', {
   }
 }));
 
-// API Routes
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
