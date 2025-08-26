@@ -20,8 +20,8 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: NODE_ENV === 'production' 
-    ? ['https://yourproductiondomain.com'] 
+  origin: NODE_ENV === 'production'
+    ? ['https://red-pebble-0def29e03.2.azurestaticapps.net'] // ✅ Your frontend domain
     : [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

@@ -1,4 +1,4 @@
-// API Configuration for the new API service
+// API Configuration
 const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   ENDPOINTS: {
@@ -18,14 +18,13 @@ const API_CONFIG = {
     },
     AUTH: {
       LOGIN: '/auth/login',
-      REGISTER: '/auth/register',
+      REGISTER: '/auth/signup',
       LOGOUT: '/auth/logout',
       REFRESH: '/auth/refresh',
-      PROFILE: '/auth/profile',
-      UPDATE_PROFILE: '/auth/profile/update'
     },
     USERS: {
       PROFILE: (username) => `/users/${username}`,
+      UPDATE_PROFILE: '/users/me',
       VIDEOS: (username) => `/users/${username}/videos`,
       SUBSCRIPTIONS: '/users/subscriptions',
       SUBSCRIBE: (userId) => `/users/${userId}/subscribe`,

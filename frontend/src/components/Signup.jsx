@@ -79,7 +79,7 @@ const Signup = () => {
 
       try {
         const { confirmPassword, ...signupData } = form;
-        await authAPI.signup(signupData);
+await authService.register(signupData);
         
         setMsg('Account created successfully! Redirecting to login...');
         setTimeout(() => {
