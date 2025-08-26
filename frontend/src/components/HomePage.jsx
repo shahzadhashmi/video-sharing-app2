@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import VideoCard from './VideoCard';
-import { videoService } from '../services/apiService';
+import { videoService } from '../services/apiService.js';
 import './HomePage.css';
 
 const HomePage = () => {
