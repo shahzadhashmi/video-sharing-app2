@@ -1,5 +1,5 @@
 import axios from 'axios';
-import API_CONFIG from './api.js';
+import API_CONFIG from './../config/api.js';
 
 // Axios instance
 const apiClient = axios.create({
