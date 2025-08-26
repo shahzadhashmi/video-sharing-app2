@@ -12,55 +12,31 @@ dotenv.config();
 
 const app = express();
 
-// Environment variables
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/video-sharing-app';
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// ----------------- CORS CONFIG -----------------
-const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = NODE_ENV === 'production'
-      ? ['https://red-pebble-0def29e03.2.azurestaticapps.net']
-      : [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:5173'];
+// ✅ Use your frontend URL
+const FRONTEND_URL = NODE_ENV === 'production'
+  ? 'https://red-pebble-0def29e03.2.azurestaticapps.net'
+  : 'http://localhost:5173';
 
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+// CORS setup
+app.use(cors({
+  origin: FRONTEND_URL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
   exposedHeaders: ['Authorization'],
-};
-app.use(cors(corsOptions));
-// ------------------------------------------------
+  optionsSuccessStatus: 200
+}));
 
+// Allow preflight requests for all routes
+app.options('*', cors());
+
+// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Timeout for large uploads
-app.use((req, res, next) => {
-  if (req.path === '/api/videos/upload') {
-    req.setTimeout(5 * 60 * 1000); // 5 minutes
-    res.setTimeout(5 * 60 * 1000);
-  }
-  next();
-});
-
-// Global cache control
-app.use('/api', (req, res, next) => {
-  res.set({
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'X-Content-Type-Options': 'nosniff'
-  });
-  next();
-});
 
 // MongoDB connection
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -70,7 +46,7 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     process.exit(1);
   });
 
-// Serve uploads folder
+// Static uploads
 app.use('/uploads', express.static('uploads', {
   maxAge: '1d',
   setHeaders: (res, path) => {
@@ -82,7 +58,7 @@ app.use('/uploads', express.static('uploads', {
   }
 }));
 
-// API routes
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
@@ -120,5 +96,5 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📋 Endpoints: Auth: /api/auth | Users: /api/users | Videos: /api/videos | Comments: /api/comments`);
+  console.log(`📋 Frontend allowed: ${FRONTEND_URL}`);
 });
