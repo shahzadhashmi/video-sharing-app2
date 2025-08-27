@@ -1,64 +1,56 @@
-// server.js
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+import express from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.js';
+import videoRoutes from './routes/videos.js';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Allowed origins
+// Allowed origins (frontend URLs)
 const allowedOrigins = [
-  'http://localhost:5173', // dev frontend
-  'https://red-pebble-0def29e03.2.azurestaticapps.net' // production frontend
+  'http://localhost:5173', // development
+  'https://red-pebble-0def29e03.2.azurestaticapps.net' // production
 ];
 
-// CORS configuration
+// CORS middleware
 app.use(cors({
-  origin: function(origin, callback){
-    if(!origin) return callback(null, true); // allow non-browser tools
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = `CORS blocked for origin ${origin}`;
-      return callback(new Error(msg), false);
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman or server-to-server requests
+    if (!allowedOrigins.includes(origin)) {
+      return callback(new Error(`CORS blocked for origin ${origin}`), false);
     }
     return callback(null, true);
   },
   credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  exposedHeaders: ['Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
 // Parse JSON
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Enable preflight for all routes
-app.options('*', cors());
+// --- Routes ---
+app.use('/api/auth', authRoutes);
+app.use('/api/videos', videoRoutes);
 
-// --- Example Routes ---
-
-// Videos routes
-app.get('/api/videos/featured', (req, res) => {
-  res.json({ videos: ['video1', 'video2', 'video3'] });
+// Error logging middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: err.message });
 });
 
-app.get('/api/videos/trending', (req, res) => {
-  res.json({ videos: ['trending1', 'trending2'] });
-});
-
-// Auth routes
-app.post('/api/auth/signup', (req, res) => {
-  const { username, password } = req.body;
-  // Fake signup logic
-  res.json({ message: `User ${username} signed up successfully!` });
-});
-
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body;
-  // Fake login logic
-  res.json({ message: `User ${username} logged in successfully!` });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('Connected to MongoDB');
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+})
+.catch((err) => {
+  console.error('MongoDB connection error:', err);
 });
